@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LangBook</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #faf9f7;
+      --surface: #ffffff;
+      --border: #ebe8e2;
+      --text: #1a1714;
+      --text2: #7c7469;
+      --text3: #c4bdb5;
+      --accent: #e8673a;
+      --accent-bg: #fdf1ec;
+      --font: 'Sora', sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+      --radius: 16px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* LAYOUT */
+    .app { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+    @media (max-width: 768px) { .app { grid-template-columns: 1fr; } }
+
+    /* SIDEBAR */
+    .sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 24px 16px; display: flex; flex-direction: column; gap: 24px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    .logo { padding: 4px 8px; }
+    .logo-title { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.03em; }
+    .logo-title span { color: var(--accent); }
+    .logo-sub { font-size: 0.7rem; color: var(--text3); font-family: var(--mono); margin-top: 2px; }
+
+    .btn-add-lang { width: 100%; padding: 10px 14px; background: var(--accent); color: #fff; border: none; border-radius: 10px; font-family: var(--font); font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: opacity 0.15s; display: flex; align-items: center; gap: 8px; }
+    .btn-add-lang:hover { opacity: 0.88; }
+
+    .lang-list { display: flex; flex-direction: column; gap: 4px; }
+    .lang-section-label { font-size: 0.62rem; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; padding: 0 8px; margin-bottom: 4px; }
+    .lang-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; cursor: pointer; transition: background 0.12s; border: none; background: none; width: 100%; text-align: left; }
+    .lang-item:hover { background: var(--bg); }
+    .lang-item.active { background: var(--accent-bg); }
+    .lang-flag { font-size: 1.3rem; width: 28px; text-align: center; }
+    .lang-name { font-size: 0.85rem; font-weight: 700; color: var(--text); flex: 1; }
+    .lang-count { font-size: 0.65rem; font-family: var(--mono); color: var(--text3); background: var(--border); padding: 2px 7px; border-radius: 999px; }
+    .lang-item.active .lang-name { color: var(--accent); }
+    .lang-item.active .lang-count { background: rgba(232,103,58,0.15); color: var(--accent); }
+
+    /* MAIN */
+    .main { display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* TOPBAR */
+    .topbar { padding: 20px 28px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 16px; background: var(--surface); position: sticky; top: 0; z-index: 10; }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .topbar-flag { font-size: 2rem; }
+    .topbar-lang { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; }
+    .topbar-native { font-size: 0.75rem; color: var(--text2); font-family: var(--mono); margin-top: 1px; }
+    .topbar-actions { display: flex; gap: 8px; }
+
+    /* TABS */
+    .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); background: var(--surface); padding: 0 28px; }
+    .tab { padding: 14px 20px; font-family: var(--font); font-size: 0.82rem; font-weight: 700; color: var(--text2); border: none; background: none; cursor: pointer; border-bottom: 2.5px solid transparent; margin-bottom: -1px; transition: all 0.15s; }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* CONTENT */
+    .content { padding: 24px 28px; flex: 1; }
+
+    /* STATS ROW */
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .stat-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+    .stat-box-val { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text); line-height: 1; }
+    .stat-box-label { font-size: 0.65rem; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
+
+    /* VOCAB SECTION */
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .section-title { font-size: 1rem; font-weight: 800; }
+    .btn-primary { padding: 9px 16px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-family: var(--font); font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: opacity 0.15s; display: flex; align-items: center; gap: 6px; }
+    .btn-primary:hover { opacity: 0.88; }
+    .btn-secondary { padding: 9px 16px; background: none; border: 1px solid var(--border); border-radius: 8px; font-family: var(--font); font-size: 0.8rem; font-weight: 700; color: var(--text2); cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 6px; }
+    .btn-secondary:hover { background: var(--bg); color: var(--text); }
+
+    /* VOCAB GRID */
+    .vocab-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+    .vocab-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; cursor: pointer; transition: all 0.15s; position: relative; }
+    .vocab-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); transform: translateY(-2px); }
+    .vocab-word { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 4px; }
+    .vocab-reading { font-size: 0.72rem; font-family: var(--mono); color: var(--text2); margin-bottom: 8px; }
+    .vocab-meaning { font-size: 0.82rem; color: var(--text2); font-weight: 600; margin-bottom: 10px; }
+    .vocab-example { font-size: 0.75rem; color: var(--text3); font-style: italic; line-height: 1.5; border-left: 2px solid var(--border); padding-left: 8px; }
+    .vocab-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+    .vocab-tag { font-size: 0.6rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--bg); color: var(--text2); border: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.05em; }
+    .vocab-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 4px; opacity: 0; transition: opacity 0.15s; }
+    .vocab-card:hover .vocab-actions { opacity: 1; }
+    .vocab-action-btn { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text2); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; transition: all 0.12s; }
+    .vocab-action-btn:hover { background: var(--bg); }
+    .vocab-action-btn.del:hover { background: #fef2f2; color: #ef4444; border-color: #fca5a5; }
+
+    /* FLASHCARD */
+    .flashcard-wrap { display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 20px 0; }
+    .flashcard { width: 100%; max-width: 480px; aspect-ratio: 3/2; perspective: 1000px; cursor: pointer; }
+    .flashcard-inner { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.5s; }
+    .flashcard.flipped .flashcard-inner { transform: rotateY(180deg); }
+    .flashcard-front, .flashcard-back { position: absolute; inset: 0; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px; box-shadow: 0 8px 32px rgba(0,0,0,0.06); }
+    .flashcard-back { transform: rotateY(180deg); background: var(--accent-bg); }
+    .fc-label { font-size: 0.65rem; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; }
+    .fc-word { font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; text-align: center; }
+    .fc-reading { font-size: 0.85rem; font-family: var(--mono); color: var(--text2); margin-top: 6px; }
+    .fc-meaning { font-size: 1.2rem; font-weight: 700; color: var(--accent); text-align: center; }
+    .fc-example { font-size: 0.8rem; color: var(--text2); font-style: italic; text-align: center; margin-top: 8px; line-height: 1.6; }
+    .fc-hint { font-size: 0.7rem; color: var(--text3); margin-top: 12px; }
+    .flashcard-nav { display: flex; align-items: center; gap: 16px; }
+    .fc-nav-btn { padding: 10px 20px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); font-family: var(--font); font-size: 0.82rem; font-weight: 700; color: var(--text2); cursor: pointer; transition: all 0.15s; }
+    .fc-nav-btn:hover { background: var(--bg); color: var(--text); }
+    .fc-counter { font-size: 0.8rem; font-family: var(--mono); color: var(--text2); }
+    .fc-progress { width: 100%; max-width: 480px; height: 4px; background: var(--border); border-radius: 999px; overflow: hidden; }
+    .fc-progress-bar { height: 100%; background: var(--accent); border-radius: 999px; transition: width 0.3s; }
+
+    /* AI GENERATE */
+    .ai-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+    .ai-panel-title { font-size: 0.88rem; font-weight: 800; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .ai-controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .ai-select { padding: 9px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; font-family: var(--font); font-size: 0.82rem; font-weight: 600; color: var(--text); outline: none; cursor: pointer; }
+    .ai-input { flex: 1; min-width: 160px; padding: 9px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; font-family: var(--font); font-size: 0.82rem; color: var(--text); outline: none; }
+    .ai-input:focus { border-color: var(--accent); }
+    .ai-results { display: flex; flex-direction: column; gap: 10px; }
+    .ai-result-card { background: var(--bg); border-radius: 12px; padding: 14px; border: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .ai-result-word { font-size: 1rem; font-weight: 800; }
+    .ai-result-reading { font-size: 0.7rem; font-family: var(--mono); color: var(--text2); margin-top: 2px; }
+    .ai-result-meaning { font-size: 0.82rem; color: var(--text2); font-weight: 600; margin-top: 4px; }
+    .ai-result-example { font-size: 0.75rem; color: var(--text3); font-style: italic; margin-top: 6px; line-height: 1.5; }
+    .btn-add-vocab { padding: 7px 14px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-family: var(--font); font-size: 0.75rem; font-weight: 700; cursor: pointer; white-space: nowrap; transition: opacity 0.15s; flex-shrink: 0; }
+    .btn-add-vocab:hover { opacity: 0.88; }
+
+    /* MODAL */
+    .overlay { position: fixed; inset: 0; background: rgba(26,23,20,0.5); display: flex; align-items: center; justify-content: center; z-index: 500; padding: 16px; backdrop-filter: blur(4px); }
+    .modal { background: var(--surface); border-radius: 20px; padding: 24px; width: 100%; max-width: 480px; max-height: 85vh; overflow-y: auto; animation: popIn 0.2s ease; }
+    @keyframes popIn { from { transform: scale(0.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .modal-title { font-size: 1rem; font-weight: 800; margin-bottom: 18px; }
+    .form-group { margin-bottom: 14px; }
+    .form-label { font-size: 0.7rem; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; display: block; }
+    .form-input { width: 100%; padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; font-family: var(--font); font-size: 0.85rem; color: var(--text); outline: none; transition: border-color 0.15s; }
+    .form-input:focus { border-color: var(--accent); }
+    .form-textarea { width: 100%; padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; font-family: var(--font); font-size: 0.85rem; color: var(--text); outline: none; resize: vertical; min-height: 80px; transition: border-color 0.15s; }
+    .form-textarea:focus { border-color: var(--accent); }
+    .modal-actions { display: flex; gap: 8px; margin-top: 18px; }
+    .btn-modal-save { flex: 1; padding: 12px; background: var(--accent); color: #fff; border: none; border-radius: 10px; font-family: var(--font); font-size: 0.88rem; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
+    .btn-modal-save:hover { opacity: 0.88; }
+    .btn-modal-cancel { padding: 12px 18px; background: none; border: 1px solid var(--border); border-radius: 10px; font-family: var(--font); font-size: 0.88rem; font-weight: 700; color: var(--text2); cursor: pointer; }
+
+    /* EMPTY */
+    .empty { text-align: center; padding: 4rem 1rem; color: var(--text3); grid-column: 1/-1; }
+    .empty-icon { font-size: 2.5rem; margin-bottom: 12px; display: block; }
+    .empty p { font-size: 0.85rem; font-weight: 600; line-height: 1.7; }
+
+    /* TOAST */
+    #toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--text); color: var(--bg); font-family: var(--font); font-weight: 700; font-size: 0.85rem; padding: 10px 22px; border-radius: 999px; transition: transform 0.25s; z-index: 999; white-space: nowrap; pointer-events: none; }
+
+    /* NO LANG SELECTED */
+    .no-lang { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; padding: 4rem; text-align: center; }
+    .no-lang-icon { font-size: 4rem; margin-bottom: 16px; }
+    .no-lang-title { font-size: 1.3rem; font-weight: 800; margin-bottom: 8px; }
+    .no-lang-sub { font-size: 0.85rem; color: var(--text2); line-height: 1.6; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-title">Lang<span>Book</span></div>
+      <div class="logo-sub">buku bahasa personalmu</div>
+    </div>
+
+    <button class="btn-add-lang" onclick="openAddLang()">+ Tambah Bahasa</button>
+
+    <div class="lang-list">
+      <div class="lang-section-label">Bahasa saya</div>
+      <div id="lang-list"></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main" id="main-content">
+    <div class="no-lang">
+      <div class="no-lang-icon">📖</div>
+      <div class="no-lang-title">Pilih bahasa dulu</div>
+      <div class="no-lang-sub">Tambah bahasa baru atau pilih dari sidebar<br>untuk mulai belajar.</div>
+    </div>
+  </main>
+
+</div>
+<div id="toast"></div>
+
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+  const SUPABASE_URL = 'https://pvqbjqjjwwcmzajldlzo.supabase.co'
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2cWJqcWpqd3djbXphamxkbHpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNjk1NzksImV4cCI6MjA5NjY0NTU3OX0.3IeD44BUsjvlvRQU6lcfWysT5nyZxq9eZCNEZ2HN-WA'
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { db: { schema: 'lang' } })
+  const supabaseApiKeys = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { db: { schema: 'apikeys' } })
+
+  // ─── STATE ────────────────────────────────────────────────────────────────
+  let languages = []
+  let selectedLang = null
+  let vocabs = []
+  let activeTab = 'vocab'
+  let fcIndex = 0
+  let fcFlipped = false
+  let cachedORKey = null
+
+  async function getORKey() {
+    if (cachedORKey) return cachedORKey
+    const { data } = await supabaseApiKeys.from('keys').select('value').eq('name', 'openrouter').single()
+    cachedORKey = data?.value || ''
+    return cachedORKey
+  }
+
+  // ─── LOAD ─────────────────────────────────────────────────────────────────
+  async function loadLanguages() {
+    const { data } = await supabase.from('languages').select('*').order('created_at')
+    languages = data || []
+    renderSidebar()
+  }
+
+  async function loadVocabs() {
+    if (!selectedLang) return
+    const { data } = await supabase.from('vocabs').select('*').eq('lang_id', selectedLang.id).order('created_at', { ascending: false })
+    vocabs = data || []
+  }
+
+  // ─── SIDEBAR ──────────────────────────────────────────────────────────────
+  function renderSidebar() {
+    const el = document.getElementById('lang-list')
+    if (languages.length === 0) {
+      el.innerHTML = `<div style="font-size:0.75rem;color:var(--text3);padding:8px;font-weight:600;">Belum ada bahasa</div>`
+      return
+    }
+    el.innerHTML = languages.map(l => `
+      <button class="lang-item ${selectedLang?.id === l.id ? 'active' : ''}" onclick="selectLang('${l.id}')">
+        <span class="lang-flag">${l.flag || '🌐'}</span>
+        <span class="lang-name">${l.name}</span>
+        <span class="lang-count">${l.vocab_count || 0}</span>
+      </button>
+    `).join('')
+  }
+
+  window.selectLang = async (id) => {
+    selectedLang = languages.find(l => l.id === id)
+    activeTab = 'vocab'
+    fcIndex = 0
+    await loadVocabs()
+    renderMain()
+    renderSidebar()
+  }
+
+  // ─── MAIN ─────────────────────────────────────────────────────────────────
+  function renderMain() {
+    const main = document.getElementById('main-content')
+    if (!selectedLang) {
+      main.innerHTML = `<div class="no-lang"><div class="no-lang-icon">📖</div><div class="no-lang-title">Pilih bahasa dulu</div><div class="no-lang-sub">Tambah bahasa baru atau pilih dari sidebar.</div></div>`
+      return
+    }
+
+    const totalVocab = vocabs.length
+    const withExample = vocabs.filter(v => v.example).length
+    const categories = [...new Set(vocabs.flatMap(v => v.tags || []))].length
+
+    main.innerHTML = `
+      <div class="topbar">
+        <div class="topbar-left">
+          <span class="topbar-flag">${selectedLang.flag || '🌐'}</span>
+          <div>
+            <div class="topbar-lang">${selectedLang.name}</div>
+            <div class="topbar-native">${selectedLang.native_name || ''}</div>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn-secondary" onclick="openEditLang()">✏️ Edit</button>
+          <button class="btn-secondary" style="color:#ef4444;border-color:#fca5a5" onclick="deleteLang()">🗑️</button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab ${activeTab==='vocab'?'active':''}" onclick="switchTab('vocab')">📚 Kosakata</button>
+        <button class="tab ${activeTab==='flashcard'?'active':''}" onclick="switchTab('flashcard')">🃏 Flashcard</button>
+        <button class="tab ${activeTab==='ai'?'active':''}" onclick="switchTab('ai')">✨ Generate AI</button>
+      </div>
+
+      <div class="content" id="tab-content">
+        ${activeTab === 'vocab' ? renderVocabTab(totalVocab, withExample, categories) : ''}
+        ${activeTab === 'flashcard' ? renderFlashcardTab() : ''}
+        ${activeTab === 'ai' ? renderAITab() : ''}
+      </div>
+    `
+  }
+
+  // ─── VOCAB TAB ────────────────────────────────────────────────────────────
+  function renderVocabTab(totalVocab, withExample, categories) {
+    return `
+      <div class="stats-row">
+        <div class="stat-box"><div class="stat-box-val">${totalVocab}</div><div class="stat-box-label">Total Kata</div></div>
+        <div class="stat-box"><div class="stat-box-val">${withExample}</div><div class="stat-box-label">Ada Contoh</div></div>
+        <div class="stat-box"><div class="stat-box-val">${categories}</div><div class="stat-box-label">Kategori</div></div>
+        <div class="stat-box"><div class="stat-box-val">${Math.round(withExample/Math.max(totalVocab,1)*100)}%</div><div class="stat-box-label">Lengkap</div></div>
+      </div>
+      <div class="section-header">
+        <div class="section-title">Kosakata</div>
+        <button class="btn-primary" onclick="openAddVocab()">+ Tambah Kata</button>
+      </div>
+      <div class="vocab-grid">
+        ${vocabs.length === 0
+          ? `<div class="empty"><span class="empty-icon">📝</span><p>Belum ada kosakata.<br>Tambah kata baru atau generate dengan AI!</p></div>`
+          : vocabs.map(v => `
+            <div class="vocab-card">
+              <div class="vocab-actions">
+                <button class="vocab-action-btn" onclick="openEditVocab('${v.id}')">✏️</button>
+                <button class="vocab-action-btn del" onclick="deleteVocab('${v.id}')">✕</button>
+              </div>
+              <div class="vocab-word">${v.word}</div>
+              ${v.reading ? `<div class="vocab-reading">${v.reading}</div>` : ''}
+              <div class="vocab-meaning">${v.meaning}</div>
+              ${v.example ? `<div class="vocab-example">${v.example}</div>` : ''}
+              ${v.tags?.length ? `<div class="vocab-tags">${v.tags.map(t=>`<span class="vocab-tag">${t}</span>`).join('')}</div>` : ''}
+            </div>
+          `).join('')}
+      </div>
+    `
+  }
+
+  // ─── FLASHCARD TAB ────────────────────────────────────────────────────────
+  function renderFlashcardTab() {
+    if (vocabs.length === 0) return `<div class="empty"><span class="empty-icon">🃏</span><p>Belum ada kosakata untuk flashcard.<br>Tambah kata dulu di tab Kosakata!</p></div>`
+    const v = vocabs[fcIndex]
+    const pct = ((fcIndex + 1) / vocabs.length * 100).toFixed(0)
+    return `
+      <div class="flashcard-wrap">
+        <div class="fc-progress"><div class="fc-progress-bar" style="width:${pct}%"></div></div>
+        <div class="flashcard ${fcFlipped ? 'flipped' : ''}" onclick="flipCard()" id="flashcard">
+          <div class="flashcard-inner">
+            <div class="flashcard-front">
+              <div class="fc-label">Terjemahkan</div>
+              <div class="fc-word">${v.word}</div>
+              ${v.reading ? `<div class="fc-reading">${v.reading}</div>` : ''}
+              <div class="fc-hint">Ketuk untuk lihat jawaban</div>
+            </div>
+            <div class="flashcard-back">
+              <div class="fc-label">Arti</div>
+              <div class="fc-meaning">${v.meaning}</div>
+              ${v.example ? `<div class="fc-example">${v.example}</div>` : ''}
+            </div>
+          </div>
+        </div>
+        <div class="flashcard-nav">
+          <button class="fc-nav-btn" onclick="prevCard()">← Sebelumnya</button>
+          <span class="fc-counter">${fcIndex + 1} / ${vocabs.length}</span>
+          <button class="fc-nav-btn" onclick="nextCard()">Berikutnya →</button>
+        </div>
+      </div>
+    `
+  }
+
+  // ─── AI TAB ────────────────────────────────────────────────────────────────
+  function renderAITab() {
+    return `
+      <div class="ai-panel">
+        <div class="ai-panel-title">✨ Generate Kosakata dengan AI</div>
+        <div class="ai-controls">
+          <select class="ai-select" id="ai-type">
+            <option value="vocab">Kosakata & Contoh</option>
+            <option value="sentences">Kalimat</option>
+            <option value="category">Per Kategori</option>
+          </select>
+          <input class="ai-input" id="ai-topic" placeholder="Topik / kata kunci (contoh: makanan, travel, bisnis...)" />
+          <select class="ai-select" id="ai-count">
+            <option value="5">5 kata</option>
+            <option value="10" selected>10 kata</option>
+            <option value="15">15 kata</option>
+          </select>
+          <button class="btn-primary" onclick="generateAI()">✨ Generate</button>
+        </div>
+        <div id="ai-results" class="ai-results"></div>
+      </div>
+    `
+  }
+
+  // ─── TAB SWITCH ───────────────────────────────────────────────────────────
+  window.switchTab = (tab) => {
+    activeTab = tab
+    fcFlipped = false
+    renderMain()
+  }
+
+  window.flipCard = () => {
+    fcFlipped = !fcFlipped
+    const fc = document.getElementById('flashcard')
+    if (fc) fc.classList.toggle('flipped', fcFlipped)
+  }
+
+  window.nextCard = () => {
+    fcFlipped = false
+    fcIndex = (fcIndex + 1) % vocabs.length
+    renderMain()
+  }
+
+  window.prevCard = () => {
+    fcFlipped = false
+    fcIndex = (fcIndex - 1 + vocabs.length) % vocabs.length
+    renderMain()
+  }
+
+  // ─── AI GENERATE ──────────────────────────────────────────────────────────
+  window.generateAI = async () => {
+    const type = document.getElementById('ai-type').value
+    const topic = document.getElementById('ai-topic').value.trim()
+    const count = document.getElementById('ai-count').value
+    const resultsEl = document.getElementById('ai-results')
+
+    resultsEl.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text2);font-size:0.85rem;font-weight:600;">✨ Generating...</div>`
+
+    const langName = selectedLang.name
+    let prompt = ''
+    if (type === 'vocab') prompt = `Generate ${count} ${langName} vocabulary words${topic ? ` about "${topic}"` : ''}. For each word provide: the word in ${langName}, romanization/reading (if applicable), Indonesian meaning, and one example sentence in ${langName} with Indonesian translation.`
+    else if (type === 'sentences') prompt = `Generate ${count} useful ${langName} sentences${topic ? ` about "${topic}"` : ''}. For each: the sentence in ${langName}, romanization (if applicable), and Indonesian translation.`
+    else prompt = `Generate ${count} ${langName} words in the category "${topic || 'daily life'}". Include word, reading, and Indonesian meaning.`
+
+    prompt += ` Reply ONLY with a JSON array, no markdown: [{"word":"...","reading":"...","meaning":"arti dalam bahasa Indonesia","example":"contoh kalimat (terjemahan Indonesia)"}]`
+
+    try {
+      const key = await getORKey()
+      const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+        body: JSON.stringify({
+          model: 'google/gemma-4-31b-it:free',
+          messages: [{ role: 'user', content: prompt }]
+        })
+      })
+      if (!resp.ok) throw new Error(`API error: ${resp.status}`)
+      const data = await resp.json()
+      const text = data.choices?.[0]?.message?.content || ''
+      const match = text.match(/\[[\s\S]*\]/)
+      if (!match) throw new Error('Format tidak valid')
+      const items = JSON.parse(match[0])
+
+      resultsEl.innerHTML = items.map((item, i) => `
+        <div class="ai-result-card">
+          <div>
+            <div class="ai-result-word">${item.word}</div>
+            ${item.reading ? `<div class="ai-result-reading">${item.reading}</div>` : ''}
+            <div class="ai-result-meaning">${item.meaning}</div>
+            ${item.example ? `<div class="ai-result-example">${item.example}</div>` : ''}
+          </div>
+          <button class="btn-add-vocab" onclick="addFromAI(${i})">+ Simpan</button>
+        </div>
+      `).join('')
+
+      window._aiItems = items
+    } catch(err) {
+      resultsEl.innerHTML = `<div style="color:#ef4444;font-size:0.82rem;font-weight:600;padding:10px">❌ ${err.message}</div>`
+    }
+  }
+
+  window.addFromAI = async (idx) => {
+    const item = window._aiItems?.[idx]
+    if (!item) return
+    await saveVocab({ word: item.word, reading: item.reading || '', meaning: item.meaning, example: item.example || '', tags: [] })
+    showToast('✅ Kata disimpan!')
+  }
+
+  // ─── CRUD LANG ────────────────────────────────────────────────────────────
+  window.openAddLang = () => showLangModal()
+  window.openEditLang = () => showLangModal(selectedLang)
+
+  function showLangModal(lang = null) {
+    const modal = document.createElement('div')
+    modal.className = 'overlay'
+    modal.innerHTML = `
+      <div class="modal">
+        <div class="modal-title">${lang ? 'Edit Bahasa' : 'Tambah Bahasa Baru'}</div>
+        <div class="form-group">
+          <label class="form-label">Nama Bahasa</label>
+          <input class="form-input" id="m-lang-name" placeholder="contoh: Bahasa Jepang" value="${lang?.name || ''}" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nama Asli (opsional)</label>
+          <input class="form-input" id="m-lang-native" placeholder="contoh: 日本語" value="${lang?.native_name || ''}" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Emoji Bendera</label>
+          <input class="form-input" id="m-lang-flag" placeholder="contoh: 🇯🇵" value="${lang?.flag || ''}" style="font-size:1.2rem" />
+        </div>
+        <div class="modal-actions">
+          <button class="btn-modal-save" onclick="saveLang('${lang?.id || ''}')">💾 Simpan</button>
+          <button class="btn-modal-cancel" onclick="this.closest('.overlay').remove()">Batal</button>
+        </div>
+      </div>
+    `
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove() })
+    document.body.appendChild(modal)
+    document.getElementById('m-lang-name').focus()
+  }
+
+  window.saveLang = async (id) => {
+    const name = document.getElementById('m-lang-name').value.trim()
+    const native_name = document.getElementById('m-lang-native').value.trim()
+    const flag = document.getElementById('m-lang-flag').value.trim()
+    if (!name) { showToast('❌ Nama bahasa wajib diisi'); return }
+
+    if (id) {
+      await supabase.from('languages').update({ name, native_name, flag }).eq('id', id)
+    } else {
+      await supabase.from('languages').insert({ name, native_name, flag, vocab_count: 0 })
+    }
+    document.querySelector('.overlay')?.remove()
+    await loadLanguages()
+    if (id && selectedLang?.id === id) {
+      selectedLang = languages.find(l => l.id === id)
+      renderMain()
+    }
+    showToast('✅ Bahasa disimpan!')
+  }
+
+  window.deleteLang = async () => {
+    if (!selectedLang || !confirm(`Hapus ${selectedLang.name}? Semua kosakata akan ikut terhapus.`)) return
+    await supabase.from('languages').delete().eq('id', selectedLang.id)
+    selectedLang = null
+    vocabs = []
+    await loadLanguages()
+    document.getElementById('main-content').innerHTML = `<div class="no-lang"><div class="no-lang-icon">📖</div><div class="no-lang-title">Pilih bahasa dulu</div></div>`
+    showToast('🗑️ Bahasa dihapus')
+  }
+
+  // ─── CRUD VOCAB ───────────────────────────────────────────────────────────
+  window.openAddVocab = () => showVocabModal()
+  window.openEditVocab = (id) => {
+    const v = vocabs.find(v => v.id === id)
+    if (v) showVocabModal(v)
+  }
+
+  function showVocabModal(vocab = null) {
+    const modal = document.createElement('div')
+    modal.className = 'overlay'
+    modal.innerHTML = `
+      <div class="modal">
+        <div class="modal-title">${vocab ? 'Edit Kata' : 'Tambah Kata Baru'}</div>
+        <div class="form-group">
+          <label class="form-label">Kata dalam ${selectedLang.name}</label>
+          <input class="form-input" id="m-word" placeholder="Masukkan kata..." value="${vocab?.word || ''}" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cara Baca / Romanisasi (opsional)</label>
+          <input class="form-input" id="m-reading" placeholder="contoh: arigatou, annyeong..." value="${vocab?.reading || ''}" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Arti dalam Bahasa Indonesia</label>
+          <input class="form-input" id="m-meaning" placeholder="Arti..." value="${vocab?.meaning || ''}" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contoh Kalimat (opsional)</label>
+          <textarea class="form-textarea" id="m-example" placeholder="Contoh penggunaan dalam kalimat...">${vocab?.example || ''}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Kategori / Tag (pisahkan dengan koma)</label>
+          <input class="form-input" id="m-tags" placeholder="contoh: sapaan, makanan, travel" value="${(vocab?.tags || []).join(', ')}" />
+        </div>
+        <div class="modal-actions">
+          <button class="btn-modal-save" onclick="saveVocabForm('${vocab?.id || ''}')">💾 Simpan</button>
+          <button class="btn-modal-cancel" onclick="this.closest('.overlay').remove()">Batal</button>
+        </div>
+      </div>
+    `
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove() })
+    document.body.appendChild(modal)
+    document.getElementById('m-word').focus()
+  }
+
+  window.saveVocabForm = async (id) => {
+    const word = document.getElementById('m-word').value.trim()
+    const reading = document.getElementById('m-reading').value.trim()
+    const meaning = document.getElementById('m-meaning').value.trim()
+    const example = document.getElementById('m-example').value.trim()
+    const tags = document.getElementById('m-tags').value.split(',').map(t => t.trim()).filter(Boolean)
+    if (!word || !meaning) { showToast('❌ Kata dan arti wajib diisi'); return }
+    document.querySelector('.overlay')?.remove()
+    await saveVocab({ word, reading, meaning, example, tags }, id)
+    showToast('✅ Kata disimpan!')
+  }
+
+  async function saveVocab(data, id = null) {
+    if (id) {
+      await supabase.from('vocabs').update(data).eq('id', id)
+    } else {
+      await supabase.from('vocabs').insert({ ...data, lang_id: selectedLang.id })
+      // Update vocab count
+      await supabase.from('languages').update({ vocab_count: vocabs.length + 1 }).eq('id', selectedLang.id)
+    }
+    await loadVocabs()
+    await loadLanguages()
+    renderSidebar()
+    if (activeTab === 'vocab') renderMain()
+  }
+
+  window.deleteVocab = async (id) => {
+    if (!confirm('Hapus kata ini?')) return
+    await supabase.from('vocabs').delete().eq('id', id)
+    await supabase.from('languages').update({ vocab_count: Math.max(0, vocabs.length - 1) }).eq('id', selectedLang.id)
+    await loadVocabs()
+    await loadLanguages()
+    renderSidebar()
+    renderMain()
+    showToast('🗑️ Kata dihapus')
+  }
+
+  // ─── TOAST ────────────────────────────────────────────────────────────────
+  let toastTimer
+  function showToast(msg) {
+    const t = document.getElementById('toast')
+    t.textContent = msg; t.style.transform = 'translateX(-50%) translateY(0)'
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.style.transform = 'translateX(-50%) translateY(80px)' }, 2500)
+  }
+
+  // ─── INIT ─────────────────────────────────────────────────────────────────
+  await loadLanguages()
+</script>
+</body>
+</html>
