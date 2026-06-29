@@ -426,6 +426,8 @@
     else if (type === 'sentences') prompt = `Generate ${count} useful ${langName} sentences${topic ? ` about "${topic}"` : ''}. For each: the sentence in ${langName}, romanization (if applicable), and Indonesian translation.`
     else prompt = `Generate ${count} ${langName} words in the category "${topic || 'daily life'}". Include word, reading, and Indonesian meaning.`
 
+    const existingWords = vocabs.map(v => v.word).join(', ')
+    if (existingWords) prompt += ` Do NOT include these words that already exist: ${existingWords}.`
     prompt += ` Reply ONLY with a JSON array, no markdown: [{"word":"...","reading":"...","meaning":"arti dalam bahasa Indonesia","example":"contoh kalimat (terjemahan Indonesia)"}]`
 
     try {
