@@ -436,7 +436,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
         body: JSON.stringify({
-          model: 'google/gemma-4-31b-it:free',
+          model: 'nvidia/nemotron-3-super-120b-a12b:free',
           messages: [{ role: 'user', content: prompt }]
         })
       })
